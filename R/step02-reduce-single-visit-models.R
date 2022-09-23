@@ -21,7 +21,7 @@ if (!file.exists(out.file)) {
   if (file.exists(input.file))
      load(file=input.file)
 
-     
+
    testfit <- function(x) {
       tsts <- c(
         all(abs(x$coefficients$sta)<10),
@@ -33,44 +33,44 @@ if (!file.exists(out.file)) {
       return(tsts)
    }
 
-slc_params <-  params %>% filter(test1,test2==5,AIC<AICnull,k==min(k)) %>% arrange(AIC-AICnull)
-if (nrow(slc_params)>0) {
-   j<-1
-   fml <- slc_params %>% slice(j) %>% pull(fml)
-   nfml <- slc_params %>% slice(j) %>% pull(nfml)
-   lkf <- slc_params %>% slice(j) %>% pull(linkfuns)
-   ss <- slc_params %>% slice(j) %>% pull(k) %>% switch(`1`=rep(T,nrow(pa.data)), `2`=pa.data$muestreo, `3`=pa.data$metodo, `4`=pa.data$metodo & pa.data$muestreo)
-   sparams <- slc_params %>% slice(j)
+   slc_params <-  params %>% filter(test1,test2==5,AIC<AICnull,k==min(k)) %>% arrange(AIC-AICnull)
+   if (nrow(slc_params)>0) {
+      j<-1
+      fml <- slc_params %>% slice(j) %>% pull(fml)
+      nfml <- slc_params %>% slice(j) %>% pull(nfml)
+      lkf <- slc_params %>% slice(j) %>% pull(linkfuns)
+      ss <- slc_params %>% slice(j) %>% pull(k) %>% switch(`1`=rep(T,nrow(pa.data)), `2`=pa.data$muestreo, `3`=pa.data$metodo, `4`=pa.data$metodo & pa.data$muestreo)
+      sparams <- slc_params %>% slice(j)
 
-   fit <- svocc(formula(fml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
-   fit.step <- svocc.step(fit, model="sta")
+      fit <- svocc(formula(fml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
+      fit.step <- svocc.step(fit, model="sta")
 
-   sparams[1,"AICs"]=AIC(fit.step)
-   sparams[1,"sfml"]=paste(as.character(fit$formula$full)[c(2,1,3)],collapse=" ")
+      sparams[1,"AICs"]=AIC(fit.step)
+      sparams[1,"sfml"]=paste(as.character(fit$formula$full)[c(2,1,3)],collapse=" ")
 
-} else {
-   sparams <-  params %>% filter(test1,test2==max(test2),k==min(k)) %>% arrange(AIC-AICnull) %>% mutate(test1=F,test2=0)
-   if (nrow(sparams)>0) {
-      for (j in 1:nrow(sparams)) {
-        fml <- sparams %>% slice(j) %>% pull(fml)
-        nfml <- sparams %>% slice(j) %>% pull(nfml)
-        lkf <- sparams %>% slice(j) %>% pull(linkfuns)
-        ss <- sparams %>% slice(j) %>% pull(k) %>% switch(`1`=rep(T,nrow(pa.data)), `2`=pa.data$muestreo, `3`=pa.data$metodo, `4`=pa.data$metodo & pa.data$muestreo)
+   } else {
+      sparams <-  params %>% filter(test1,test2==max(test2),k==min(k)) %>% arrange(AIC-AICnull) %>% mutate(test1=F,test2=0)
+      if (nrow(sparams)>0) {
+         for (j in 1:nrow(sparams)) {
+           fml <- sparams %>% slice(j) %>% pull(fml)
+           nfml <- sparams %>% slice(j) %>% pull(nfml)
+           lkf <- sparams %>% slice(j) %>% pull(linkfuns)
+           ss <- sparams %>% slice(j) %>% pull(k) %>% switch(`1`=rep(T,nrow(pa.data)), `2`=pa.data$muestreo, `3`=pa.data$metodo, `4`=pa.data$metodo & pa.data$muestreo)
 
 
-        prefit <- svocc(formula(fml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
-        fit <- svocc.step(prefit, model="sta")
-        tst <- testfit(fit)
+           prefit <- svocc(formula(fml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
+           fit <- svocc.step(prefit, model="sta")
+           tst <- testfit(fit)
 
-        if (sum(tst[1:3],na.rm=T)==3) {
-          sparams[j,"test1"]=T
-          sparams[j,"test2"]=sum(tst[1:5],na.rm=T)
-          sparams[j,"AICs"]=AIC(fit)
-          sparams[j,"sfml"]=paste(as.character(fit$formula$full)[c(2,1,3)],collapse=" ")
-        }
+           if (sum(tst[1:3],na.rm=T)==3) {
+             sparams[j,"test1"]=T
+             sparams[j,"test2"]=sum(tst[1:5],na.rm=T)
+             sparams[j,"AICs"]=AIC(fit)
+             sparams[j,"sfml"]=paste(as.character(fit$formula$full)[c(2,1,3)],collapse=" ")
+           }
+         }
       }
    }
-}
 
 
 

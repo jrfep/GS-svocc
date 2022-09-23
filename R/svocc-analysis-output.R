@@ -3,73 +3,76 @@
 require(dplyr)
 require(tidyr)
 require(raster)
-##require(gdata)
-#require(foreign)
-#require(fractaldim)
-#require(SDMTools)
+
 require(chron)
 require(detect)
 require(vegan)
-
-## ubicación de la carpeta de trabajo y el repositorio local
-
-dplyr::select(linkfuns,k,fml,AIC,AICnull)
-
-
-## use null model to validate fitted model (lower AIC and maybe calculate Nagelkerke R2)
+require(stringr)
+require(magrittr)
 
 GIS.data <- sprintf("Rdata/GIS.rda")
 load(GIS.data)
 
-for (k in dir("Rdata/svocc/",pattern="svocc*",full.names=T))
-   load(k)
+input.dir <- sprintf("Rdata/svocc/step")
 
-## this does not work for this example (they need to be NESTED models)
-NagR2 <- function(fullmodel,nullmodel) {
-    Lnull <- exp(nullmodel$loglik)
-    Lfull <- exp(fullmodel$loglik)
-    N <- fullmodel$nobs
-    # R2 <-  (1-((Lnull/Lfull)^(2/N)))/(1-(Lnull^(2/N)))
-    Nh <- 2/N
-    Lratio <- Lnull/Lfull
-    R2 <- (1-Lratio^Nh)/(1-Lnull^Nh)
-    return(R2)
+allmodels <- tibble()
+
+for (k in dir(input.dir,pattern="*rda",full.names=T)) {
+
+      (load(k))
+      spname <- basename(k) %>% str_replace("\\.rda","")
+      allmodels %<>% bind_rows(sparams %>% mutate(sp=spname))
+      rm(sparams)
 }
 
-R2s <- data.frame()
-for(k in ls(pattern="boot")) {
-  Mfull <- get(k)
-  Mnull <- get(sub("boot","null",k))
-  R2s <- rbind(R2s,
-               data.frame(name=gsub(".boot","",k),
-                      #R2= NagR2(Mfull,Mnull),
-                      AIC0=AIC(Mnull),
-                      AICF=AIC(Mfull),
-                      deltaAIC=AIC(Mnull)-AIC(Mfull),
-                      stringsAsFactors=F) )
-}
-rm(Mnull,Mfull,fit.null)
+## Nagelkerke R2 does not work for this example (they need to be NESTED models)
+allmodels %>% filter(AIC<AICnull) %>% dplyr::select(sp,fml,linkfuns,k,AIC,AICnull) %>% mutate(deltaAIC=AIC-AICnull) %>% print(n=100)
 
-R2s
-
-table(sign(R2s$R2),R2s$deltaAIC>2)
-
-
-   # ## al menos 12 species con modelos decentes y tres mas con modelos parciales
-ccis <- data.frame()
-
-
-   for (spp in subset(R2s,deltaAIC>0)$name) {
-      mdl <- sprintf("%s.boot",spp)
-      fit <- get(mdl)
-       nm <- paste(strsplit(mdl,"\\.")[[1]][1:2],collapse=". ")
-       d1 <- data.frame(species=nm,var=names(fit$coefficients$sta),coef=fit$coefficients$sta)
-       d2 <- cbind(d1,confint(fit,sprintf("sta_%s",d1$var)))
-      ccis <- rbind(ccis,data.frame(species=nm,d2))
-
+input.dir <- sprintf("Rdata/svocc/bootstrap")
+mcoefs <- tibble()
+for (j in pull(allmodels,sp)) {
+   input.file <- sprintf("%s/%s.rda",input.dir,j)
+   if (file.exists(input.file)) {
+      mdls <- (load(input.file))
+      mdl <- get(grep("\\.boot",mdls,value=T))
+      cfs <- coefficients(mdl)
+      cis <- confint(mdl,type="boot") # very wide intervals
+      cis <- confint(mdl)
+      nms <- str_split_fixed(names(cfs), "_", n=2)
+      mcoefs %<>% bind_rows(tibble(species=j, component=nms[,1],variable=nms[,2],mu=cfs,lower=cis[,1],upper=cis[,2]))
+      rm(mdls,mdl,cfs,cis)
    }
-    sort(table(ccis$var))
-table(ccis$species,ccis$var)
+}
+
+
+mcoefs %>% filter(component=="sta",variable=="bsq") %>% print(n=100)
+
+require(ggplot2)
+# load the library
+library(forcats)
+
+
+dat <- {mcoefs %>% filter(component=="sta",variable=="bsq") %>% mutate(
+   species = fct_reorder(str_replace(species,"\\.",". "), mu),
+   response=case_when(
+   lower>0 ~ "sig. pos.",
+   upper<0 ~ "sig. neg.",
+   TRUE ~ "not significant",
+)) %>% arrange(mu)}
+
+cols <- c("sig. pos." = "slateblue4", "sig. neg." = "orange", "not significant" = "grey66")
+
+
+ggplot(data=dat) +
+geom_point(aes(x=mu,y=species,colour=response),cex=3) +
+geom_errorbar(aes(y=species,xmin=lower,xmax=upper,colour=response), width = 0.2,lwd=1.05) +
+scale_colour_manual(values = cols) +
+theme_minimal() + theme(legend.position="none", axis.text.y=element_text(face = "italic")) + geom_vline(xintercept=0,lty=2,col="black")
+
+# + coord_cartesian(xlim=c(-6,6))
+
+
+
 
    d1 <- subset(ccis,var %in% "bsq") # one avoids, one prefer
    d1 <- subset(ccis,var %in% "dbsq") # one avoids deforested areas
