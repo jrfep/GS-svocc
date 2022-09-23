@@ -13,6 +13,8 @@ require(vegan)
 
 ## ubicación de la carpeta de trabajo y el repositorio local
 
+dplyr::select(linkfuns,k,fml,AIC,AICnull)
+
 
 ## use null model to validate fitted model (lower AIC and maybe calculate Nagelkerke R2)
 

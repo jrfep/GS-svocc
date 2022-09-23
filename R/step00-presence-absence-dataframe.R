@@ -2,7 +2,7 @@
 args <- commandArgs(TRUE)
 sp <- args[1]
 
-out.file <- sprintf("Rdata/padata-%s.rda",sp)
+out.file <- sprintf("Rdata/padata/%s.rda",sp)
 if (!file.exists(out.file)) {
   require(dplyr)
   require(tidyr)
