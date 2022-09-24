@@ -21,6 +21,7 @@ if (!file.exists(out.file)) {
 
   linkfuns <- c("cloglog","probit")
   detvars <- c("muestreo + (walk * cam)","muestreo + walk + cam","walk * cam","walk + cam")
+  detvars2 <- c("muestreo + cam","cam")
   occvars <- c("bsq + dcon + dcom + frs + dbsq",
   "bsq + dcon + frs + dbsq",
   "bsq + dcon + frs + dbsq",
@@ -44,7 +45,7 @@ if (!file.exists(out.file)) {
         fml=sprintf("pa ~ %s |  %s",occvars,detvars),
         nfml=sprintf("pa ~ bloque |  %s",detvars),test1=F,test2=0L)} %>%
     bind_rows(
-    {expand_grid(occvars,detvars,linkfuns,k=3:4) %>%
+    {expand_grid(occvars,detvars=detvars2,linkfuns,k=3:4) %>%
       mutate(
         fml=sprintf("pa_cam ~ %s |  %s",occvars,detvars),
         nfml=sprintf("pa_cam ~ bloque |  %s",detvars),test1=F,test2=0L)}
