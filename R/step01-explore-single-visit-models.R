@@ -62,6 +62,15 @@ if (!file.exists(out.file)) {
     )
     return(tsts)
   }
+  AICc_aprox <- function(x) {
+    ll <-logLik(x)
+    aic <- AIC(x)
+    npar <- attr(ll,"df")
+    nobs <- attr(ll,"nobs")
+    AICc <- aic+((2*(npar^2) + 2*npar)/(nobs-npar-1))
+    return(AICc)
+  }
+
 
   for (j in 1:nrow(params)) {
     fml <- params %>% slice(j) %>% pull(fml)
@@ -82,8 +91,9 @@ if (!file.exists(out.file)) {
       fit.null <- svocc(formula(nfml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
       params[j,"test1"]=T
       params[j,"test2"]=sum(tst[1:5],na.rm=T)
-      params[j,"AIC"]=AIC(fit)
-      params[j,"AICnull"]=AIC(fit.null)
+
+      params[j,"AIC"]=AICc_aprox(fit)
+      params[j,"AICnull"]=AICc_aprox(fit.null)
       # if (sum(tst[1:5],na.rm=T)==5 & AIC(fit)<AIC(fit.null)) stop("we made it!")
       save(file=out.file,params)
     }
@@ -104,7 +114,7 @@ if (!file.exists(out.file)) {
 
     fit.null <- svocc(formula(nfml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
     tst <- testfit(fit)
-    nulls[j,"AICnull"]=AIC(fit.null)
+    nulls[j,"AICnull"]=AICc_aprox(fit.null)
     nulls[j,"test2"]=sum(tst)
   }
 
