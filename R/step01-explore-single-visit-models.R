@@ -36,10 +36,19 @@ if (!file.exists(out.file)) {
   "bsq + frs",
   "bsq + dcon",
   "bsq + dcom"
+  # "bsq" not interested in model without any threat indicator
   )
-  params <- expand_grid(occvars,detvars,linkfuns,k=1:4) %>%
-  mutate(fml=sprintf("pa ~ %s |  %s",occvars,detvars),
-    nfml=sprintf("pa ~ bloque |  %s",detvars),test1=F,test2=0L)
+  params <-
+    {expand_grid(occvars,detvars,linkfuns,k=1:2) %>%
+      mutate(
+        fml=sprintf("pa ~ %s |  %s",occvars,detvars),
+        nfml=sprintf("pa ~ bloque |  %s",detvars),test1=F,test2=0L)} %>%
+    bind_rows(
+    {expand_grid(occvars,detvars,linkfuns,k=3:4) %>%
+      mutate(
+        fml=sprintf("pa_cam ~ %s |  %s",occvars,detvars),
+        nfml=sprintf("pa_cam ~ bloque |  %s",detvars),test1=F,test2=0L)}
+        )
 
 
   testfit <- function(x) {
@@ -57,7 +66,13 @@ if (!file.exists(out.file)) {
     fml <- params %>% slice(j) %>% pull(fml)
     nfml <- params %>% slice(j) %>% pull(nfml)
     lkf <- params %>% slice(j) %>% pull(linkfuns)
-    ss <- params %>% slice(j) %>% pull(k) %>% switch(`1`=rep(T,nrow(pa.data)), `2`=pa.data$muestreo, `3`=pa.data$metodo, `4`=pa.data$metodo & pa.data$muestreo)
+    ss <- params %>% slice(j) %>% pull(k) %>%
+    switch(
+      `1`=rep(T,nrow(pa.data)),
+      `2`=pa.data$muestreo, # restricted to first sampling area (Warapata)
+      `3`=pa.data$metodo, # only cells with cameras + walks
+      `4`=pa.data$metodo & pa.data$muestreo # first sampling area and only cameras
+    )
 
     fit <- svocc(formula(fml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
     tst <- testfit(fit)
