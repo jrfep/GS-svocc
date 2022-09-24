@@ -14,7 +14,7 @@ load(GIS.data)
 mi.rda <- sprintf("Rdata/padata/%s.rda",sp)
 if (file.exists(mi.rda))
    load(file=mi.rda)
- input.file <- sprintf("Rdata/svocc/explore/%s.rda",sp)
+input.file <- sprintf("Rdata/svocc/explore/%s.rda",sp)
 if (file.exists(input.file))
    load(file=input.file)
 
@@ -30,13 +30,18 @@ for (kk in 1:4) {
        nfml <- slc_params %>% slice(1) %>% pull(nfml)
 
        fit.full <- svocc(formula(fml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
-       fit.null <- svocc(formula(nfml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
-       save(file=out.file,fit.null,fit.full)
+
+       fit.boot <- bootstrap(fit.full, B=100)
+       fnull <- svocc(formula(nfml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
+       fit.null <- bootstrap(fnull, B=100)
+
+       save(file=out.file,fit.null,fit.boot)
     } else {
       slc_params <-  nulls %>% filter(k==kk,linkfuns==lkf) %>% arrange(AICnull) %>% slice(1)
       nfml <- slc_params %>% pull(nfml)
-       fit.null <- svocc(formula(nfml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
-       save(file=out.file,fit.null)
+      fnull <- svocc(formula(nfml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
+      fit.null <- bootstrap(fnull, B=100)
+      save(file=out.file,fit.null)
     }
   }
 }
