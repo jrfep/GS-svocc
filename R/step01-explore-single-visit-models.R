@@ -89,6 +89,30 @@ if (!file.exists(out.file)) {
   }
 
   #params %>% filter(test1) %>% dplyr::select(fml,k,linkfuns,test2:AICnull)
-  params <- {params %>% filter(test1)}
- save(file=out.file,params)
+  if (sum(params$test1)==0) {
+    nulls <- params %>% dplyr::select(nfml,k,linkfuns) %>% unique()
+    for (j in 1:nrow(nulls)) {
+      nfml <- nulls %>% slice(j) %>% pull(nfml)
+      lkf <- nulls %>% slice(j) %>% pull(linkfuns)
+      ss <- nulls %>% slice(j) %>% pull(k) %>%
+      switch(
+        `1`=rep(T,nrow(pa.data)),
+        `2`=pa.data$muestreo, # restricted to first sampling area (Warapata)
+        `3`=pa.data$metodo, # only cells with cameras + walks
+        `4`=pa.data$metodo & pa.data$muestreo # first sampling area and only cameras
+      )
+
+      fit.null <- svocc(formula(nfml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
+      tst <- testfit(fit)
+      nulls[j,"AICnull"]=AIC(fit.null)
+      nulls[j,"test2"]=sum(tst)
+    }
+    save(file=out.file,nulls)
+
+  } else {
+    params <- {params %>% filter(test1)}
+    save(file=out.file,params)
+
+  }
+
 }
