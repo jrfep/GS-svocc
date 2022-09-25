@@ -6,9 +6,12 @@
 
 ## keep kintr output hidden
 *.docx
+*.pdf
+*.html
 
-#Hide Rdata folder
+#Hide Rdata and output folders
 Rdata/
+output/
 
 # History files
 .Rhistory

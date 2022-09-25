@@ -1,6 +1,7 @@
 ---
+title: Single visit occupancy model for mammals and birds in the Gran Sabana
+author: José R. Ferrer-Paris
 output:
-  word_document: default
   html_document: default
 editor_options:
   chunk_output_type: console
@@ -12,7 +13,7 @@ editor_options:
 
 First load the packages that we need for the analysis:
 
-```{r packages}
+```{r packages, echo=TRUE, message=FALSE, warning=FALSE}
 require(dplyr)
 require(tidyr)
 require(raster)
@@ -63,6 +64,7 @@ for (k in dir(input.dir,pattern="*rda",full.names=T)) {
 ```
 
 This will show us a summary by applying following steps:
+
 - `filter` models that:
   - passed two test of model converge (looking at size of esimates and standard errors),
   - have AIC lower than the corresponding null model,
@@ -147,6 +149,7 @@ modeltab %>%
   dplyr::select(species,method,sampling,ends_with("null"),ends_with("best")) %>% 
   mutate(deltaAICc=AICc_null-AICc_best) -> tableA1
 
+write.csv(file="../output/tabla-AIC-modelos.csv",tableA1)
 ```
 
 This table shows how many species had a fitted model for each of the four combinations of data and sampling. The first column is the number of species with good fit of spatial covariates when compared with the null model (delta AICc is greater than 2), the second column is the number of species with a spatial covariates models comparable to the null model (delta AICc is less or equal 2), and the third column is the number of species with only a null model (delta AICc less than zero or model did not converge).
@@ -212,7 +215,7 @@ plotModCoef <- function(varcode,varname) {
 
 We start with the covariate forest cover, which is include in all models:
 
-```{r}
+```{r fig.height=7, fig.width=7}
 plotModCoef("bsq","Forest")
 ```
 
@@ -290,7 +293,7 @@ preds %<>% mutate(
 Now we compare the predicitions. 
 
 
-```{r}
+```{r fig.height=7, fig.width=7}
 dat <- {preds %>%
     mutate(species = fct_reorder(species, best,.fun=first)) %>% arrange(best)}
 grps = tibble(xmin=c(0),xmax=c(50),ymin=c(1),ymax=c(13))
