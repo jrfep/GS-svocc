@@ -1,3 +1,7 @@
+## mac OSX can be so annoying...
+.DS_Store
+
+## hide nohup output
 *.out
 
 ## keep kintr output hidden
