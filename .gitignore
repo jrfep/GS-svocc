@@ -1,5 +1,8 @@
 *.out
 
+## keep kintr output hidden
+*.docx
+
 #Hide Rdata folder
 Rdata/
 
