@@ -58,35 +58,31 @@ digraph G {
 	
 	
 
-    subgraph cluster_fieldwork {
-      pencolor=transparent
-		// node [shape=circle style="filled" width=1.3 fixedsize=true color="#DFDAD2"];
-		// SD [label="Sampling\ndesign\n2014"]
-		subgraph cluster_obs {
+
+		subgraph cluster_kavanayen {
 			node [shape=box color="#52AEF7" style="filled"]
-			TRACK [label="Georef\nWalking Track"]
-			TRACKW [label="Warapata\n(2015)"]
-			TRACKK [label="Kavanayen\n(2018)"]
-			PRW [label="detection record"]
-			PRK [label="detection record"]
-			EFFW [label="sampling effort"]
-			EFFK [label="sampling effort"]
-		}
-		subgraph cluster_camera {
 			
-			node [shape=box color="#EFDAA2" style="filled"]
-			CT [label="Camera Trap"]
-			CTW [label="Warapata\n(2015)"]
-			CTK [label="Kavanayen\n(2018)"]
+			TRACKK [label="Georef\nWalking Track"]
+			KAVANAYEN [label="Kavanayen\n(2018)"]
+			PRK [label="detection record"]
+			EFFK [label="sampling effort"]
+			CTK [label="Camera trap"]
 			PAK [label="detection record"]
-			PAW [label="detection record"]
-			CTEW [label="sampling effort"]
 			CTEK [label="sampling effort"]
 		}
-		//	SD -> {TRACK -> CT [style = invis]} [style = invis] // set node order in cluster
-		// SD -> {TRACK -> CT [style = invis]}  [style="solid" color="#DFDAD2"]
 		
-    }
+		subgraph cluster_warapata {
+      node [shape=box color="#EFDAA2" style="filled"]
+      WARAPATA [label="Warapata\n(2015)"]
+			CTW [label="Camera trap"]
+			PAW [label="detection record"]
+			CTEW [label="sampling effort"]
+			TRACKW [label="Georef\nWalking Track"]
+			PRW [label="detection record"]
+			EFFW [label="sampling effort"]
+		}
+		
+    
 	subgraph cluster_covars {
 		label="spatial covariates"
 		node [shape=circle style="dashed"]
@@ -109,12 +105,11 @@ digraph G {
 		FRST-> PFST
 		DFOR -> DDFR
 		COMU  -> DCOM
-		CT -> CTW 
-		CTW -> {CTEW,PAW}
-		CT -> CTK -> {CTEK,PAK}
-		TRACK -> {TRACKW;TRACKK} 
-		TRACKW -> {EFFW;PRW}
-		TRACKK -> {EFFK;PRK}
+		WARAPATA -> CTW -> {CTEW,PAW}
+		KAVANAYEN -> CTK -> {CTEK,PAK}
+	
+		WARAPATA -> TRACKW -> {EFFW;PRW}
+		KAVANAYEN -> TRACKK -> {EFFK;PRK}
 		
 		{DDFR; DFIRE; PFST; DCON; DCOM }-> SITE_COVARS
 		//INT -> INTW ->  {PR;  CONU}
