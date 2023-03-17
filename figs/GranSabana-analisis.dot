@@ -1,0 +1,136 @@
+digraph G {
+	concentrate=true;
+	##rankdir=LR;
+    layout=dot;
+	//newrank=true; // rank without respect to cluster
+    rankdir="TD"; 
+	//subgraph cluster_analysis
+	{
+		node [shape=box color="#EAC2C5" style="filled"]
+		
+  		subgraph cluster_StMS1 {
+  			label="Single visit occupancy model\nStachowicz et al. In prep." labelloc = "bottom"
+  			SVOC1 [label="Model 1: Warapata / Camera Traps"]
+  			SVOC2 [label="Model 2: Wara+Kava / Camera Traps"]
+  			SVOC3 [label="Model 3: Warapata / Camera + Obs."]
+  			SVOC4 [label="Model 4: Wara+Kava / Camera + Obs."]
+
+  		}
+  		SITE_COVARS [label="Site covariates"]
+  		OCC1 [label="Camera trap\nOccurrence\n(W)"]
+  		OCC2 [label="Camera trap\nOccurrence\n(W+K)"]	
+  		OCC3 [label="CT and Obs\nOccurrence\n(W)"]
+  		OCC4 [label="CT and Obs\nOccurrence\n(W+K)"]
+  		VISIT_COVAR1 [label="Camera trap\neffort\n(W)"]
+  		VISIT_COVAR2 [label="Camera trap\neffort\n(W+K)"]
+  		VISIT_COVAR3 [label="CT + Obs\neffort\n(W)"]
+  		VISIT_COVAR4 [label="CT + Obs\neffort\n(W+K)"]
+  		//	VISIT_COVAR2 [label="Visit covariates\n(W+K & CT)"]
+  		//	OCC3 [label="Species Occurrence\n(W & CT+OBS)"]
+  		//	VISIT_COVAR3 [label="Visit covariates\n(W & CT+OBS)"]
+  		//	OCC4 [label="Species Occurrence\n(W+K & CT+OBS)"]
+  		//	VISIT_COVAR4 [label="Visit covariates\n(W+K & CT+OBS)"]
+	}
+
+    subgraph cluster_spatial {
+		node [shape=box color="#AEF275" style="filled"]
+		RS [label="Remote sensing data\n(2000-2021)"]
+		MODIS
+		LANDSAT
+		//DVI [label="NDVI timeseries"]
+		DFOR [label="Deforestation events"]
+		FRST [label="Tree cover"]
+		FIRE [label="Fire events"]
+		
+		GIS 
+		//RIVER [label="Rivers"]
+		COMU [label="Pemon communities"]
+	}
+
+	
+	subgraph cluster_interviews {
+		node [shape=box color="#DAEAF2" style="filled"]
+		INT [label="Interviews\nin Pemon comunities"]
+		INTW [label="Warapata\n(2015)"]
+		INTK [label="Kavanayen\n(2018)"]
+		CONU [label="conucos"]
+	}
+	
+	
+
+    subgraph cluster_fieldwork {
+      pencolor=transparent
+		// node [shape=circle style="filled" width=1.3 fixedsize=true color="#DFDAD2"];
+		// SD [label="Sampling\ndesign\n2014"]
+		subgraph cluster_obs {
+			node [shape=box color="#52AEF7" style="filled"]
+			TRACK [label="Georef\nWalking Track"]
+			TRACKW [label="Warapata\n(2015)"]
+			TRACKK [label="Kavanayen\n(2018)"]
+			PRW [label="detection record"]
+			PRK [label="detection record"]
+			EFFW [label="sampling effort"]
+			EFFK [label="sampling effort"]
+		}
+		subgraph cluster_camera {
+			
+			node [shape=box color="#EFDAA2" style="filled"]
+			CT [label="Camera Trap"]
+			CTW [label="Warapata\n(2015)"]
+			CTK [label="Kavanayen\n(2018)"]
+			PAK [label="detection record"]
+			PAW [label="detection record"]
+			CTEW [label="sampling effort"]
+			CTEK [label="sampling effort"]
+		}
+		//	SD -> {TRACK -> CT [style = invis]} [style = invis] // set node order in cluster
+		// SD -> {TRACK -> CT [style = invis]}  [style="solid" color="#DFDAD2"]
+		
+    }
+	subgraph cluster_covars {
+		label="spatial covariates"
+		node [shape=circle style="dashed"]
+	//	DRIV [label="dist.\nrivers"]
+		PFST  [label="prop.\nforest"]
+		DDFR [label="dist.\nforest\nloss"]
+		DFIRE [label="dist.\nfire\nevent"]
+		DCOM [label="dist.\ncomm."]
+		DCON [label="dist.\nconuco"]
+	}
+	{	
+		MODIS -> {FIRE}
+		GIS -> { COMU}
+		RS -> {MODIS;LANDSAT}
+		LANDSAT -> {DFOR;FRST}
+		// {NDVI;FIRE;FRST} -> SD [style="solid" color="#DFDAD2"]
+		//RIVER -> DRIV
+		CONU  -> DCON
+		FIRE  -> DFIRE
+		FRST-> PFST
+		DFOR -> DDFR
+		COMU  -> DCOM
+		CT -> CTW 
+		CTW -> {CTEW,PAW}
+		CT -> CTK -> {CTEK,PAK}
+		TRACK -> {TRACKW;TRACKK} 
+		TRACKW -> {EFFW;PRW}
+		TRACKK -> {EFFK;PRK}
+		
+		{DDFR; DFIRE; PFST; DCON; DCOM }-> SITE_COVARS
+		//INT -> INTW ->  {PR;  CONU}
+		INT -> {INTK;  INTW} ->  {CONU}
+		
+		{CTEW} -> VISIT_COVAR1 -> SVOC1 // [label="visit covar"]
+		{CTEW;CTEK} -> VISIT_COVAR2 -> SVOC2// VISIT_COVAR2
+		{CTEW;EFFW} -> VISIT_COVAR3 -> SVOC3//VISIT_COVAR3
+		{CTEW;CTEK;EFFW;EFFK} -> VISIT_COVAR4 -> SVOC4//VISIT_COVAR4
+		{PAW} -> OCC1 -> SVOC1 // OCC1
+		{PAW;PAK} -> OCC2 -> SVOC2 // OCC2
+		{PAW;PRW} -> OCC3 -> SVOC3 // OCC3
+		{PAW;PAK;PRW;PRK} -> OCC4 -> SVOC4 // OCC4
+		{SITE_COVARS} -> {SVOC1;SVOC2;SVOC3;SVOC4}
+		SVOC1 -> SVOC2 -> SVOC3 -> SVOC4 [style=invis]
+		VISIT_COVAR1 -> VISIT_COVAR2 -> VISIT_COVAR3 -> VISIT_COVAR4 [style=invis]
+		OCC1 -> OCC2 -> OCC3 -> OCC4 [style=invis]
+	}
+}
