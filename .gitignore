@@ -1,7 +1,17 @@
+## mac OSX can be so annoying...
+.DS_Store
+
+## hide nohup output
 *.out
 
-#Hide Rdata folder
+## keep kintr output hidden
+*.docx
+*.pdf
+*.html
+
+#Hide Rdata and output folders
 Rdata/
+output/
 
 # History files
 .Rhistory
