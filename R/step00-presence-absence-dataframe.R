@@ -96,7 +96,7 @@ if (!file.exists(out.file)) {
 
 
   dts  %>%
-    left_join(walk) %>% left_join(cams) %>% left_join(species) %>%
+    left_join(walk) %>% full_join(cams) %>% full_join(species) %>%
     filter(!is.na(grid) & (!is.na(walk) | !is.na(cam))) %>%
     transmute(grid, walk, cam,
       caz=as.factor(!caz %in% 0),

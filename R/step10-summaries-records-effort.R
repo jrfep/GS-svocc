@@ -22,10 +22,13 @@ eventos_actualizados$grid <- qry$OID_
 eventos_adicionales <- eventos %>% filter(!species %in% eventos_actualizados$species) %>%
   mutate(fotos=as.character(fotos))
 
+
 eventos <- eventos_actualizados@data %>% 
   bind_rows(eventos_adicionales)
 
+with(eventos, table(bloque, camara %in% "RAS"))
 
+filter(eventos, bloque %in% sprintf("B%02d",7:10), camara %in% "RAS")
 
 # Walks per grid
 
@@ -83,9 +86,9 @@ event_summary <- event_summary %>%
   left_join(off_camera_event_summary, by = "grid")
 
 effort_data <- walk %>%
-  left_join(cam, by = "grid") %>%
-  left_join(event_summary, by = "grid") %>%
-  filter(!is.na(grid) & (!is.na(walk) | !is.na(cam))) %>%
+  full_join(cam, by = "grid") %>%
+  full_join(event_summary, by = "grid") %>%
+  filter(!is.na(grid) ) %>%
   transmute(grid, 
             walk=coalesce(walk,0L),
             distance=coalesce(distance,0L),
