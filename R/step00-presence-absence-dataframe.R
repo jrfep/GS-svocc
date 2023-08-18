@@ -11,22 +11,53 @@ if (!file.exists(out.file)) {
   require(detect)
 
   GIS.data <- "Rdata/GIS.rda"
+  options(timeout = max(300, getOption("timeout")))
+  
   if (!file.exists(GIS.data))
-    download.file(url="https://figshare.com/ndownloader/files/37547995",destfile=GIS.data)
+    download.file(url="https://figshare.com/ndownloader/files/37547995",destfile=GIS.data, extra="--continue")
   event.data <- "Rdata/all-events.csv"
   if (!file.exists(event.data))
     download.file(url="https://figshare.com/ndownloader/files/42055824",destfile=event.data)
   
   load(GIS.data)
-  eventos_completos <- read.csv2(event.data)
-  coordinates(eventos_completos) <- c("long","lat")
-  crs(eventos_completos) <- grd@proj4string
-  qry <- over(eventos_completos,grd)
-  eventos_completos$grid <- qry$OID_
-  eventos <- eventos_completos@data
+  eventos_actualizados <- read.csv2(event.data)
+  coordinates(eventos_actualizados) <- c("long","lat")
+  crs(eventos_actualizados) <- grd@proj4string
+  qry <- over(eventos_actualizados,grd)
+  eventos_actualizados$grid <- qry$OID_
   
-  tps@data %>% group_by(grid) %>% tally() %>% transmute(grid,walk=(n-mean(n))/sd(n))-> walk
+  ## differences between both event data frames:
+  eventos_adicionales <- eventos %>% 
+    filter(!species %in% eventos_actualizados$species) %>%
+    mutate(fotos=as.character(fotos))
+  
+  eventos <- eventos_actualizados@data %>% 
+    bind_rows(eventos_adicionales)
+  
+  
+  #tps@data %>% group_by(grid) %>% tally() %>% transmute(grid,walk=(n-mean(n))/sd(n))-> walk
 
+  tps_xy <- spTransform(tps, CRS("+proj=utm +zone=19 +datum=WGS84 +units=m +no_defs +type=crs"))
+  xys <- coordinates(tps_xy)
+  
+  
+  walk <- tps@data %>% 
+    group_by(grid) %>% 
+    summarise(gps_log = n(),
+              dates = n_distinct(time))
+  
+  walk_ms <- data.frame()
+  for (k in unique(tps_xy@data$grid)) {
+    ss <- tps_xy@data$grid == k
+    mtz <- as.matrix(dist(xys[ss,]))
+    mtz[upper.tri(mtz,diag = TRUE)] <- NA
+    walk_ms <- rbind(walk_ms, data.frame(grid=k, distance=sum(apply(mtz[-1,],1, min, na.rm=TRUE))))
+  }
+  
+  walk <- walk %>% left_join(walk_ms, by = "grid") %>% 
+    transmute(grid, walk=(distance-mean(distance))/sd(distance))
+  
+  
   camaras %>% group_by(grid) %>% summarise(cam=sum(dias.de.trabajo),caz=max(caza.celda)) %>% transmute(grid,caz,cam=(cam-mean(cam))/sd(cam)) -> cams
 
   dts <- data.frame(

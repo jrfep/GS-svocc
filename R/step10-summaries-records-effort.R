@@ -12,14 +12,20 @@ load(GIS.data)
 event.data <- "Rdata/all-events.csv"
 if (!file.exists(event.data))
   download.file(url="https://figshare.com/ndownloader/files/42055824",destfile=event.data)
-eventos_completos <- read.csv2(event.data)
-coordinates(eventos_completos) <- c("long","lat")
-crs(eventos_completos) <- grd@proj4string
-qry <- over(eventos_completos,grd)
-eventos_completos$grid <- qry$OID_
+eventos_actualizados <- read.csv2(event.data)
+coordinates(eventos_actualizados) <- c("long","lat")
+crs(eventos_actualizados) <- grd@proj4string
+qry <- over(eventos_actualizados,grd)
+eventos_actualizados$grid <- qry$OID_
 
 ## differences between both event data frames:
-table(droplevels(subset(eventos,!species %in% eventos_completos$species)$species))
+eventos_adicionales <- eventos %>% filter(!species %in% eventos_actualizados$species) %>%
+  mutate(fotos=as.character(fotos))
+
+eventos <- eventos_actualizados@data %>% 
+  bind_rows(eventos_adicionales)
+
+
 
 # Walks per grid
 
@@ -51,26 +57,26 @@ cam <- camaras %>%
   transmute(grid, caz, cam)
 
 
-event_summary <- eventos_completos@data %>%
+event_summary <- eventos %>%
   group_by(grid) %>%
   summarise(
     total_spp=n_distinct(species))
 
-on_camera_event_summary <- eventos_completos@data %>%
+on_camera_event_summary <- eventos %>%
   filter(!camara %in% "RAS") %>% 
   group_by(grid) %>%
   summarise(
     on_camera_spp=n_distinct(species),
     on_camera_events=n())
 
-off_camera_event_summary <- eventos_completos@data %>%
+off_camera_event_summary <- eventos %>%
   filter(camara %in% "RAS") %>% 
   group_by(grid) %>%
   summarise(
     off_camera_spp=n_distinct(species),
     off_camera_events=n())
 
-table(eventos_completos@data$bloque)
+table(eventos$bloque)
 
 event_summary <- event_summary %>% 
   left_join(on_camera_event_summary, by = "grid") %>% 
