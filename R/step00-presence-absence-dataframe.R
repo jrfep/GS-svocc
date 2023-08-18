@@ -13,8 +13,18 @@ if (!file.exists(out.file)) {
   GIS.data <- "Rdata/GIS.rda"
   if (!file.exists(GIS.data))
     download.file(url="https://figshare.com/ndownloader/files/37547995",destfile=GIS.data)
+  event.data <- "Rdata/all-events.csv"
+  if (!file.exists(event.data))
+    download.file(url="https://figshare.com/ndownloader/files/42055824",destfile=event.data)
+  
   load(GIS.data)
-
+  eventos_completos <- read.csv2(event.data)
+  coordinates(eventos_completos) <- c("long","lat")
+  crs(eventos_completos) <- grd@proj4string
+  qry <- over(eventos_completos,grd)
+  eventos_completos$grid <- qry$OID_
+  eventos <- eventos_completos@data
+  
   tps@data %>% group_by(grid) %>% tally() %>% transmute(grid,walk=(n-mean(n))/sd(n))-> walk
 
   camaras %>% group_by(grid) %>% summarise(cam=sum(dias.de.trabajo),caz=max(caza.celda)) %>% transmute(grid,caz,cam=(cam-mean(cam))/sd(cam)) -> cams

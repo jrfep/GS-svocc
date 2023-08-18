@@ -1,7 +1,8 @@
 ---
-title: Single visit occupancy model for mammals and birds in the Gran Sabana
-author: José R. Ferrer-Paris
+title: "Single visit occupancy model for mammals and birds in the Gran Sabana"
+author: "José R. Ferrer-Paris"
 output:
+  pdf_document: default
   html_document: default
 editor_options:
   chunk_output_type: console
@@ -25,6 +26,7 @@ require(magrittr)
 require(ggplot2)
 require(forcats)
 require(tidyr)
+here::i_am("doc/svocc-analysis-GS.Rmd")
 ```
 
 ## Spatial data
@@ -32,14 +34,32 @@ require(tidyr)
 Read the spatial data stored in a Rdata file:
 
 ```{r spatial-dat}
-GIS.data <- sprintf("../Rdata/GIS.rda")
+GIS.data <- sprintf(here::here("Rdata","GIS.rda"))
 load(GIS.data)
 ```
 
 Prepare a data frame for prediction:
  
 ```{r}
-dts <- data.frame(bsq=values(vbsq),dcon=values(dist.conucos),dcom=values(dist.comunidades),frs=values(dist.frs),dbsq=values(dist.dbsq),dcaz1=values(dist.caza1),dcaz2=values(dist.caza2),grid=values(rgrd)) %>% group_by(grid) %>% summarise(bsq=mean(bsq),dbsq=mean(dbsq),dcon=mean(dcon),dcom=mean(dcom),dpob=mean(min(dcon,dcom)),dhum=mean(min(dcon,dcom,dcaz1,dcaz2)),dcaz1=mean(dcaz1),dcaz2=mean(dcaz2),dcaz=mean(min(dcaz1,dcaz2)),frs=mean(frs))
+dts <- data.frame(bsq=values(vbsq),
+                  dcon=values(dist.conucos),
+                  dcom=values(dist.comunidades),
+                  frs=values(dist.frs),
+                  dbsq=values(dist.dbsq),
+                  dcaz1=values(dist.caza1),
+                  dcaz2=values(dist.caza2),
+                  grid=values(rgrd)) %>% 
+  group_by(grid) %>% 
+  summarise(bsq=mean(bsq),
+            dbsq=mean(dbsq),
+            dcon=mean(dcon),
+            dcom=mean(dcom),
+            dpob=mean(min(dcon,dcom)),
+            dhum=mean(min(dcon,dcom,dcaz1,dcaz2)),
+            dcaz1=mean(dcaz1),
+            dcaz2=mean(dcaz2),
+            dcaz=mean(min(dcaz1,dcaz2)),
+            frs=mean(frs))
 
 dts %>% dplyr::select(bsq:frs) %>% decostand(.,"stand") -> mi.data
 
@@ -50,7 +70,7 @@ dts %>% dplyr::select(bsq:frs) %>% decostand(.,"stand") -> mi.data
 This will read brief summary of all models explored for all species:
 
 ```{r}
-input.dir <- sprintf("../Rdata/svocc/explore")
+input.dir <- here::here("Rdata","svocc","explore")
 allmodels <- tibble()
 nullmodels <- tibble()
 
@@ -86,7 +106,7 @@ allmodels %>%
          linkfuns=="cloglog") %>% 
   mutate(deltaAIC=AIC-AICnull) %>% 
   group_by(sp,k) %>% 
-  summarise(n=n(),deltaAIC=min(deltaAIC)) %>%
+  summarise(n=n(),deltaAIC=min(deltaAIC), .groups = "keep") %>%
   pivot_wider(id_cols="sp",names_from=c(k),values_from=n) %>% 
   print(n=100)
 ```
@@ -119,7 +139,8 @@ Now we read the selected model (lowest AICc) for each species. If the model with
 ```{r}
 modeltab <- tibble()
 for (k in 1:4) {
-  input.dir <- sprintf("../Rdata/svocc/best-%s",k)
+  
+  input.dir <- here::here("Rdata","svocc",paste0("best-",k))
   for (j in dir(input.dir,full.names=T)) {
     mdls <- (load(j))
     sp = basename(j) %>% str_replace("\\.rda","") %>%
@@ -149,7 +170,7 @@ modeltab %>%
   dplyr::select(species,method,sampling,ends_with("null"),ends_with("best")) %>% 
   mutate(deltaAICc=AICc_null-AICc_best) -> tableA1
 
-write.csv(file="../output/tabla-AIC-modelos.csv",tableA1)
+write.csv(file = here::here("output","tabla-AIC-modelos.csv"),tableA1)
 ```
 
 This table shows how many species had a fitted model for each of the four combinations of data and sampling. The first column is the number of species with good fit of spatial covariates when compared with the null model (delta AICc is greater than 2), the second column is the number of species with a spatial covariates models comparable to the null model (delta AICc is less or equal 2), and the third column is the number of species with only a null model (delta AICc less than zero or model did not converge).

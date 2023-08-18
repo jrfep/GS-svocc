@@ -3,6 +3,7 @@
 First prepare all folder:
 
 ```sh
+mkdir -p output/
 mkdir -p Rdata/padata/
 mkdir -p Rdata/svocc/explore/
 
