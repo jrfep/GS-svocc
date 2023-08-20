@@ -7,7 +7,7 @@
 ## keep kintr output hidden
 *.docx
 #*.pdf
-*.html
+#*.html
 
 #Hide Rdata and output folders
 Rdata/

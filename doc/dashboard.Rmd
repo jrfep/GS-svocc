@@ -2,11 +2,26 @@
 title: "Monitoreo de Mamíferos y otros vertebrados en la Gran Sabana"
 output: 
   flexdashboard::flex_dashboard:
-    theme: lumen
+    theme:
+      version: 4
+      bg: "#F1FBFB"
+      fg: "#5B1A18"
+      primary: "#D67236"
+      navbar-bg: "#FD6467" 
+      base_font: 
+        google: Prompt
+      heading_font:
+        google: Sen
+      code_font:
+        google: 
+          # arguments to sass::font_google() 
+          family: JetBrains Mono
+          local: false
     social: menu
     source: embed
     navbar:
-      - { title: "Back home", href: "index.html", align: left }
+      - { title: "Proyecto en OSF", href: "https://osf.io/6qtep/", align: left }
+      - { title: "Repositorio GitHub", href: "https://github.com/jrfep/GS-svocc", align: left }
 editor_options: 
   chunk_output_type: console
 ---
@@ -16,7 +31,10 @@ library(flexdashboard)
 library(dplyr)
 library(leaflet)
 library(sp)
-#library(ggplot2)
+library(ggplot2)
+library(DT)
+library(htmltools)
+library(units)
 #library(plotly)
 #library(spocc)
 #library(rinat)
@@ -32,6 +50,10 @@ library(tmap)
 library(RColorBrewer)
 palette(brewer.pal(8, "Set2"))
 
+```
+
+```{r thematic, include = FALSE}
+thematic::thematic_rmd(font = "auto")
 ```
 
 ```{r dataread, message=FALSE, warning=FALSE, include=FALSE}
@@ -79,10 +101,11 @@ for (k in unique(tps_xy@data$grid)) {
   ss <- tps_xy@data$grid == k
   mtz <- as.matrix(dist(xys[ss,]))
   mtz[upper.tri(mtz,diag = TRUE)] <- NA
-  walk_ms <- rbind(walk_ms, data.frame(grid=k, distance=sum(apply(mtz[-1,],1, min, na.rm=TRUE))))
+  walk_ms <- rbind(walk_ms, data.frame(grid=k, dist_walk=sum(apply(mtz[-1,],1, min, na.rm=TRUE))))
 }
 
-walk <- walk %>% left_join(walk_ms, by = "grid")
+walk <- walk %>% left_join(walk_ms, by = "grid") %>%
+  mutate(region = if_else(grid <151, "Warapata", "Kavanayen"))
 
 gpslog <- spLines(subset(tps,tps@data$track_fid ==0),
         subset(tps,tps@data$track_fid ==1), 
@@ -131,7 +154,7 @@ effort_data <- walk %>%
   filter(!is.na(grid) ) %>%
   transmute(grid, 
             walk=coalesce(walk,0L),
-            distance=coalesce(distance,0L),
+            dist_walk=coalesce(dist_walk,0L),
             cam=coalesce(cam,0L),
             total_spp=coalesce(total_spp,0L),
             on_camera_spp=coalesce(on_camera_spp,0L),
@@ -142,6 +165,19 @@ effort_data <- walk %>%
 
 effort_data$bloque <- factor(grd@data$cuadrado[match(effort_data$grid,grd@data$OID_)])
 
+grd@data <- grd@data %>% 
+  left_join(event_summary, by=c("OID_"="grid")) %>% 
+  transmute(Celda=OID_,
+            Bloque=cuadrado,
+            #`Distancia recorrida` = dist_walk,
+            #`Dias*cámara` = cam,
+            `Eventos fotográficos` = coalesce(on_camera_events,0L),
+            `Otros avistamientos` = coalesce(off_camera_events,0L),
+            `Especies fotografiadas` = coalesce(on_camera_spp,0L),
+            `Especies avistadas` = coalesce(off_camera_spp,0L),
+            `Total spp. detectadas` = coalesce(total_spp,0L), 
+            )
+
 ```
 
 
@@ -149,25 +185,97 @@ Column1{.tabset .tabset-fade data-width=250}
 -------
 Detecciones con cámara trampa y avístamientos incidentales
 
-Tablas de observaciones por:
+### Esfuerzo de muestreo {data-width=245}
 
-### Especies {data-width=245}
+```{r esfuerzo}
+
+cuadro_2 <- effort_data %>% 
+  mutate(Region = if_else(bloque %in% 1:6,"Warapata","Kavanayen")) %>%
+  group_by(Region, Bloque = bloque) %>% 
+  summarise(`Distancia recorrida (km)` = sum(set_units(dist_walk,'m')) %>% set_units('km'),
+  `Días cámara`=sum(cam), .groups = "keep") 
+
+  DT::datatable(
+    cuadro_2,
+    #colnames = ,
+    #caption = tbl_caption,
+    options = list(
+      dom = 't', 
+      pageLength = -1,
+      order = list(list(1, 'asc'))),
+    #container=my.container,
+    rownames = FALSE,
+    width = '100%', 
+    height = '100%') %>%
+  formatRound(c("Distancia recorrida (km)"),digits=2)
+
+```
+
+### Observaciones por especie {data-width=245}
 ```{r taxalist}
 
-filter(eventos, bloque %in% sprintf("B%02d",7:10), camara %in% "RAS") %>% 
-  knitr::kable()
+###Create HTML formatting code for header and overall table HTML container
+#create header style HTML code
+# use colors from the flatly theme?
+header.style <- "th { font-family: 'Arial'; font-weight: bold; color: white; background-color: #18bc9c;}"
+cell.style <- "text-align: center; border-right-width: 1px; border-right-style: solid; border-right-color: white; 
+border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: white"
+hcell.style <- "text-align: center; border-width: 1px; border-style: solid; border-color: white; font-size:8px; ba
+ckground-color: #18bc9c;"
+
+#pull header names from the table
+header.names <- c("Assessment Unit", "Period", "min(RS[i])", "mean RS", "max(RS[i])", "mean RS")
+# The container parameter allows us to design the header of the table using CSS
+my.container <- withTags(table(
+  style(type = "text/css", header.style),
+    thead(
+      tr(th("",colspan=2),
+        th("Original formula",colspan=3, style = hcell.style),
+        th("Conditional formula", style = hcell.style)),
+      tr(
+      lapply(header.names, th, style = cell.style)
+      )
+    )
+  )
+)
+
+
+cuadro_1 <- eventos %>% group_by(Especie = species) %>% summarise(`Eventos fotográficos` = sum(!camara %in% "RAS"),`Otros avistamientos`=sum(camara %in% "RAS")) 
+
+  DT::datatable(
+    cuadro_1,
+    #colnames = ,
+    #caption = tbl_caption,
+    options = list(
+      dom = 't', 
+      pageLength = -1,
+      order = list(list(1, 'desc'),list(2, 'desc'))),
+    #container=my.container,
+    rownames = FALSE,
+    width = '100%', 
+    height = '100%') #%>%
+#  formatRound(c("min_RS", "mean_RS", "max_RS", "mean_RS_cor"),digits=3)
+
+
+
 ```
+
+
 
 Column2 {.tabset .tabset-fade}
 -------
 
+
 ### Mapa
 ```{r map, eval = TRUE}
 tmap_mode("view")
-map1 <- tm_shape(grd) + 
-  tm_polygons( border.col ="yellowgreen") +
-  tm_shape(gpslog) +
-  tm_lines() +
+map1 <- 
+  tm_shape(gpslog, name = "Recorrido (GPS)") +
+  tm_lines(col = "maroon") +
+  tm_shape(subset(grd,Bloque %in% 1:6), name = "Warapata: Unidades de muestreo") + 
+  tm_polygons( border.col = "#F1BB7B", alpha=.5) +
+  tm_shape(subset(grd,Bloque %in% 7:10), name = "Kavanayen: Unidades de muestreo") + 
+  tm_polygons( border.col = "#FD6467", alpha=.5) +
   tm_minimap()
 
 tmap_leaflet(map1)
@@ -177,30 +285,41 @@ tmap_leaflet(map1)
 
 ### Caminata {data-width=245}
 
-```{r sitelist}
-
-plot(distance~walk, walk)
+```{r "walking distance", fig.showtext = TRUE}
+ggplot(data=walk, aes(x = walk, y = dist_walk, colour = region)) +
+  geom_point() +
+  scale_colour_manual(values=c("Kavanayen"="#FD6467","Warapata"="#F1BB7B")) +
+  labs(x="GPS log points", y = "Distancia (metros)", title = "Distancia recorrida en cada unidad de muestreo (celda)")
 ```
 
-### Event type 
-```{r donut}
 
-event_summary %>% 
-  knitr::kable()
+### Rastros y otros avistamientos {data-width=245}
+
+```{r xtraKavanayen}
+filter(eventos,  camara %in% "RAS") %>% 
+  transmute(Especie=species, `Tipo de evidencia`=evento, Bloque=bloque, Celda=grid, Año=ano, Mes=mes,Día=dia) %>% 
+  DT::datatable(options = list(
+      pageLength = 25,
+      order = list(list(4, 'asc'),list(5, 'asc'),list(6, 'asc'))),
+    rownames = FALSE)
 ```
 
-### Observaciones por año
+
+### Esfuerzo de muestreo (expandido)
 ```{r obsbyyear}
 
 effort_data %>% 
   group_by(bloque) %>% 
-  summarise(`nr. of s. u.`=n_distinct(grid),
-            `gps log points` = sum(walk),
-            `distance in m` = sum(distance),
-            `camera days` = sum(cam),
-            `events on camera` = sum(on_camera_events),
-            `events off camera` = sum(off_camera_events)) %>% 
-  DT::datatable()
+  summarise(`nr. de celdas`=n_distinct(grid),
+            `Puntos del log del GPS` = sum(walk),
+            `Distancia recorrida (km)` = sum(set_units(dist_walk,'m')) %>% set_units('km'),
+            `Días cámara` = sum(cam),
+            `Eventos fotográficos` = sum(on_camera_events),
+            `Otros avistamientos` = sum(off_camera_events)) %>% 
+  DT::datatable(options = list(
+      pageLength = 25),
+    rownames = FALSE) %>%
+  formatRound(c("Distancia recorrida (km)"),digits=2)
 
 ```
 
@@ -212,13 +331,47 @@ sessionInfo()
 Column3{data-width=150}
 -------
 
-### Números
+### Warapata
+
+### Eventos fotográficos
+
 ```{r}
+on_camera <- effort_data %>% filter(bloque %in% 1:6) %>% summarise(sum(on_camera_events)) %>% pull
+off_camera <- effort_data %>% filter(bloque %in% 1:6) %>% summarise(sum(off_camera_events)) %>% pull
+n_especies <- eventos %>% filter(bloque %in% sprintf("B%02d",1:6)) %>% summarise(n_distinct(species)) %>% pull
+valueBox(on_camera, icon = "fa-camera", color = "#F1BB7B")
+```
 
-on_camera <- effort_data %>% summarise(sum(on_camera_events)) %>% pull
-off_camera <- effort_data %>% summarise(sum(off_camera_events)) %>% pull
-milestone <- nrow(eventos)
-gauge(on_camera, min=0, max=milestone,label="On camera events")
-gauge(off_camera, min=0, max=milestone,label="Off camera events")
+### Otros avistamientos
 
+```{r}
+valueBox(off_camera, icon = "fa-binoculars", color = "#F1BB7B")
+```
+### Especies
+
+```{r}
+valueBox(n_especies, icon = "fa-paw", color = "#F1BB7B")
+```
+
+### Kavanayen
+
+### Eventos fotográficos
+
+```{r}
+on_camera <- effort_data %>% filter(bloque %in% 7:10) %>% summarise(sum(on_camera_events)) %>% pull
+off_camera <- effort_data %>% filter(bloque %in% 7:10) %>% summarise(sum(off_camera_events)) %>% pull
+n_especies <- eventos %>% filter(bloque %in% sprintf("B%02d",7:10)) %>% summarise(n_distinct(species)) %>% pull
+valueBox(on_camera, icon = "fa-camera", color = "#FD6467")
+```
+
+### Otros avistamientos
+
+```{r}
+valueBox(off_camera, icon = "fa-binoculars", color = "#FD6467")
+```
+
+### Especies
+
+```{r}
+valueBox(n_especies, icon = "fa-paw", color = "#FD6467")
 ```
