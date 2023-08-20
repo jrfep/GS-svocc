@@ -1,6 +1,9 @@
 ---
-title: "Single visit occupancy model for mammals and birds in the Gran Sabana"
-author: "José R. Ferrer-Paris"
+title: "Resources selection model application for wildlife monitoring in Gran Sabana, Venezuela"
+author: 
+  - "José R. Ferrer-Paris"
+  - "Izabela Stachowicz"
+  - "Ada Y. Sánchez-Mercado"
 output:
   pdf_document: default
   html_document: default
@@ -61,7 +64,7 @@ dts <- data.frame(bsq=values(vbsq),
             dcaz=mean(min(dcaz1,dcaz2)),
             frs=mean(frs))
 
-dts %>% dplyr::select(bsq:frs) %>% decostand(.,"stand") -> mi.data
+mi.data <- dts %>% dplyr::select(bsq:frs) %>% decostand(.,"stand") 
 
 ```
 
@@ -146,10 +149,19 @@ for (k in 1:4) {
     sp = basename(j) %>% str_replace("\\.rda","") %>%
       str_replace("\\.",". ")
     if ("fit.boot" %in% mdls) {
-      modeltab %<>% bind_rows({modelsum(fit.boot) %>% mutate(species=sp,ss=k,type="best")}) %>% bind_rows({modelsum(fit.null) %>% mutate(species=sp,ss=k,type="null")})
+      modeltab %<>% 
+        bind_rows({
+          modelsum(fit.boot) %>% 
+            mutate(species=sp,ss=k,type="best")}) %>%
+        bind_rows({
+          modelsum(fit.null) %>% 
+            mutate(species=sp,ss=k,type="null")})
 
     } else {
-      modeltab %<>% bind_rows({modelsum(fit.null) %>% mutate(species=sp,ss=k,type="null")})
+      modeltab %<>% 
+        bind_rows({
+          modelsum(fit.null) %>% 
+            mutate(species=sp,ss=k,type="null")})
     }
   }
 }
@@ -166,9 +178,10 @@ modeltab %>%
     ) %>%  
   pivot_wider(id_cols = c(species,method,sampling), 
               names_from = type, 
-              values_from = c(formula,loglik,npar,nobs,AICc)) %>%
-  dplyr::select(species,method,sampling,ends_with("null"),ends_with("best")) %>% 
-  mutate(deltaAICc=AICc_null-AICc_best) -> tableA1
+              values_from = c(formula, loglik, npar, nobs, AICc)) %>%
+  dplyr::select(species, method, sampling,
+                ends_with("null"), ends_with("best")) %>% 
+  mutate(deltaAICc = AICc_null - AICc_best) -> tableA1
 
 write.csv(file = here::here("output","tabla-AIC-modelos.csv"),tableA1)
 ```
