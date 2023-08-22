@@ -118,7 +118,7 @@ if (!file.exists(out.file)) {
   pa.data$bloque <- factor(grd@data$cuadrado[match(pa.data$grid,grd@data$OID_)])
 
   ## sampling area (Warapata vs. Kavanayen) and method (Cam+walk vs Only walk)
-  pa.data$muestreo <- pa.data$bloque %in% 1:6
+  pa.data$region <- pa.data$bloque %in% 1:6
   pa.data$metodo <- pa.data$grid %in% cams$grid
 
 

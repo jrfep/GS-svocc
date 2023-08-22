@@ -21,7 +21,7 @@ if (file.exists(input.file))
 for (kk in 1:4) {
   out.file <- sprintf("Rdata/svocc/best-%s/%s.rda",kk,sp)
   if (!file.exists(out.file)) {
-    ss <- switch(kk,`1`=rep(T,nrow(pa.data)), `2`=pa.data$muestreo, `3`=pa.data$metodo, `4`=pa.data$metodo & pa.data$muestreo)
+    ss <- switch(kk,`1`=rep(T,nrow(pa.data)), `2`=pa.data$region, `3`=pa.data$metodo, `4`=pa.data$metodo & pa.data$region)
     lkf <- "cloglog"
 
     slc_params <-  params %>% filter(test1,test2==5,AIC<AICnull,k==kk,linkfuns==lkf) %>% arrange(AIC-AICnull)

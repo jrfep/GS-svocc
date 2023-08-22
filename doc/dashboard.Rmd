@@ -191,23 +191,18 @@ Detecciones con cámara trampa y avístamientos incidentales
 
 cuadro_2 <- effort_data %>% 
   mutate(Region = if_else(bloque %in% 1:6,"Warapata","Kavanayen")) %>%
-  group_by(Region, Bloque = bloque) %>% 
-  summarise(`Distancia recorrida (km)` = sum(set_units(dist_walk,'m')) %>% set_units('km'),
-  `Días cámara`=sum(cam), .groups = "keep") 
+  group_by(Region) %>% 
+  summarise(
+    `Nr. bloques` = n_distinct(bloque),
+    `Nr. celdas con cámaras` = sum(if_else(cam>0,1,0)),
+    `Días*cámara`=sum(cam),
+    `Nr. celdas visitadas` = sum(if_else(dist_walk>0,1,0)),
+    `Distancia recorrida (km)` = sum(set_units(dist_walk,'m')) %>% set_units('km') %>% round(2),
+   .groups = "keep") %>% t()
 
-  DT::datatable(
-    cuadro_2,
-    #colnames = ,
-    #caption = tbl_caption,
-    options = list(
-      dom = 't', 
-      pageLength = -1,
-      order = list(list(1, 'asc'))),
-    #container=my.container,
-    rownames = FALSE,
-    width = '100%', 
-    height = '100%') %>%
-  formatRound(c("Distancia recorrida (km)"),digits=2)
+colnames(cuadro_2) <- cuadro_2[1,]
+
+cuadro_2[-1,] %>% knitr::kable()
 
 ```
 

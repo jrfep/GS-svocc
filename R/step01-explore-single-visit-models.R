@@ -20,8 +20,8 @@ if (!file.exists(out.file)) {
 
 
   linkfuns <- c("cloglog","probit")
-  detvars <- c("muestreo + (walk * cam)","muestreo + walk + cam","walk * cam","walk + cam")
-  detvars2 <- c("muestreo + cam","cam")
+  detvars <- c("region + (walk * cam)","region + walk + cam","walk * cam","walk + cam")
+  detvars2 <- c("region + cam","cam")
   occvars <- c("bsq + dcon + dcom + frs + dbsq",
   "bsq + dcon + frs + dbsq",
   "bsq + dcon + frs + dbsq",
@@ -79,9 +79,9 @@ if (!file.exists(out.file)) {
     ss <- params %>% slice(j) %>% pull(k) %>%
     switch(
       `1`=rep(T,nrow(pa.data)),
-      `2`=pa.data$muestreo, # restricted to first sampling area (Warapata)
+      `2`=pa.data$region, # restricted to first sampling area (Warapata)
       `3`=pa.data$metodo, # only cells with cameras + walks
-      `4`=pa.data$metodo & pa.data$muestreo # first sampling area and only cameras
+      `4`=pa.data$metodo & pa.data$region # first sampling area and only cameras
     )
 
     fit <- svocc(formula(fml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))
@@ -107,9 +107,9 @@ if (!file.exists(out.file)) {
     ss <- nulls %>% slice(j) %>% pull(k) %>%
     switch(
       `1`=rep(T,nrow(pa.data)),
-      `2`=pa.data$muestreo, # restricted to first sampling area (Warapata)
+      `2`=pa.data$region, # restricted to first sampling area (Warapata)
       `3`=pa.data$metodo, # only cells with cameras + walks
-      `4`=pa.data$metodo & pa.data$muestreo # first sampling area and only cameras
+      `4`=pa.data$metodo & pa.data$region # first sampling area and only cameras
     )
 
     fit.null <- svocc(formula(nfml), data=pa.data[ss,],link.sta = lkf, link.det = "logit", penalized = FALSE, method = c( "optim"))

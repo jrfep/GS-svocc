@@ -1,0 +1,175 @@
+---
+title: "Supplement to: The challenge of interrupted monitoring in a perturbed ecosystem."
+subtitle: "Supplement 2 — AIC tables"
+author: 
+  - "Izabela Stachowicz"
+  - "José R. Ferrer-Paris"
+  - "Ada Y. Sánchez-Mercado"
+output:
+  pdf_document: default
+classoption: landscape
+editor_options:
+  chunk_output_type: console
+---
+
+This supplementary documents includes four tables comparing null and spatial covariate models for each of the four combinations of input data (photographic records and off-camera sightings) and sampling regions (Warapata and Kavanayen). 
+
+Response variable $y$ is the binary response with values of one (1) for detected and zero (0) for not detected. In all models a complementary log-log link function is used for the occurrence component and a logit link function is used for the detection component.
+
+For each species the null model includes a fixed, spatially implicit effects of sampling block. The best spatial covariates model is shown when the difference in AICc ($\Delta$AICc) is higher than zero. 
+
+```{r include = FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
+
+```{r setup, warning=FALSE, message=FALSE}
+require(dplyr)
+require(tidyr)
+require(stringr)
+require(magrittr)
+require(detect)
+library(kableExtra)
+```
+
+
+```{r}
+
+
+modelsum <- function(x) {
+  ll <-logLik(x)
+  fml <- paste(as.character(x$formula$full)[c(2,1,3)],collapse=" ")
+  tbl <- tibble(
+    formula=fml,
+    loglik=as.vector(ll),
+    npar=attr(ll,"df"),
+    nobs=attr(ll,"nobs"),
+    df.null=x$df.null,
+    df.residual=df.residual(x),
+    AIC=AIC(x),
+    AUC=AUC(x)
+  )
+  return(tbl)
+}
+modeltab <- tibble()
+for (k in 1:4) {
+  
+  input.dir <- here::here("Rdata","svocc",paste0("best-",k))
+  for (j in dir(input.dir,full.names=T)) {
+    mdls <- (load(j))
+    sp = basename(j) %>% str_replace("\\.rda","") %>%
+      str_replace("\\.",". ")
+    if ("fit.boot" %in% mdls) {
+      modeltab %<>% 
+        bind_rows({
+          modelsum(fit.boot) %>% 
+            mutate(species=sp,ss=k,type="best")}) %>%
+        bind_rows({
+          modelsum(fit.null) %>% 
+            mutate(species=sp,ss=k,type="null")})
+
+    } else {
+      modeltab %<>% 
+        bind_rows({
+          modelsum(fit.null) %>% 
+            mutate(species=sp,ss=k,type="null")})
+    }
+  }
+}
+modeltab %>% 
+  mutate(
+    formula=str_replace(formula,'[pa_cam]+ ~ ',''),
+    occurrence = str_split_i(formula," \\| ",1), 
+    detection = str_split_i(formula," \\| ",2),
+    AICc=AIC+((2*npar^2 + 2*npar)/(nobs-npar-1)),
+    method=if_else(ss %in% 1:2,"camera + observations","camera only"),
+    sampling=if_else(ss %% 2 == 0,"Warapata","Warapata + Kavanayen"),
+    loglik_sum=sprintf("%0.2f (%s, %s)",loglik,npar,nobs)
+    ) %>%  
+  pivot_wider(id_cols = c(species,method,sampling), 
+              names_from = type, 
+              values_from = c(formula, occurrence, detection, loglik_sum, AICc)) %>%
+  dplyr::select(species, method, sampling,
+                ends_with("null"), ends_with("best")) %>% 
+  mutate(deltaAICc = AICc_null - AICc_best) -> tableA1
+# if we want to export this
+#write.csv(file = here::here("output","tabla-AIC-modelos.csv"),tableA1)
+```
+
+
+
+```{r}
+hdr.above <- c("","Null model"=3,"Spatial covariate model"=4,"")
+corr.col.names <- c("Species",  
+                    "Detect. covars.","LL (par, n)", "AICc",
+                    "Occurrence covariates", "Detect. covars.", "LL (par, n)", "AICc", "$\\Delta$AICc")
+options(knitr.kable.NA = '—')
+
+tableA1 %>% 
+  filter(method == "camera only", sampling == "Warapata") %>%
+  dplyr::select(species, 
+                detection_null, loglik_sum_null, AICc_null, 
+                occurrence_best,  detection_best, loglik_sum_best, AICc_best, 
+                deltaAICc) %>%
+   kbl(digits=2, caption = "AIC table for models fitted using photographic records from Warapata as input. Response variable $y$ is the binary response with values of one (1) for detected and zero (0) for not detected. Sample is limited to sampling units with cameras. The null model includes different occurrence probabilities for each sampling block and uses $cam = camera*days$ as covariate of detection probability. Occurrence covariates  for the spatial covariate model are: $bsq$ is tree cover; $dbsq$ is distance to nearest deforestation events;  $frs$  distance to nearest fire events; $dcom$ distance to nearest human communities or settlements; $dcon$ distance to nearest conucos. The spatial covariates models uses $cam = camera*days$ as covariate of detection probability. LL: Log Likehood, par: Number of parameters, n: number of observations, AICc: corrected Akaike Information Criterion, $\\Delta$AICc: difference between null and spatial covariates model.", 
+       col.names = corr.col.names, escape = FALSE) %>%
+ column_spec(column = 1, italic = TRUE) %>%
+  row_spec(0, color = "white", background = "black" ) %>%
+  row_spec(seq(2,33,by=2), background = "#F0F0F0" ) %>%
+  add_header_above(hdr.above)
+```
+
+
+```{r}
+
+
+tableA1 %>% 
+  filter(method == "camera only", sampling == "Warapata + Kavanayen") %>%
+  dplyr::select(species, 
+                detection_null, loglik_sum_null, AICc_null, 
+                occurrence_best,  detection_best, loglik_sum_best, AICc_best, 
+                deltaAICc) %>%
+   kbl(digits=2, caption = "AIC table for models fitted using photographic records from Warapata and Kavanayen as input. Response variable $y$ is the binary response with values of one (1) for detected and zero (0) for not detected. Sample is limited to sampling units with cameras. The null model includes different occurrence probabilities for each sampling block. Occurrence covariates  for the spatial covariate model are: $bsq$ is tree cover; $dbsq$ is distance to nearest deforestation events;  $frs$  distance to nearest fire events; $dcom$ distance to nearest human communities or settlements; $dcon$ distance to nearest conucos. Covariates for the detection probability include $region$ and $cam = camera*days$ . LL: Log Likehood, par: Number of parameters, n: number of observations, AICc: corrected Akaike Information Criterion, $\\Delta$AICc: difference between null and spatial covariates model.", 
+       col.names = corr.col.names, escape = FALSE) %>%
+ column_spec(column = 1, italic = TRUE) %>%
+  row_spec(0, color = "white", background = "black" ) %>%
+  row_spec(seq(2,33,by=2), background = "#F0F0F0" ) %>%
+  add_header_above(hdr.above)
+```
+
+
+```{r}
+full.capt <- "AIC table for models fitted using \\textbf{photographic records} and \\textbf{off-camera sightings} from \\textbf{Warapata} as input. Response variable $y$ is the binary response with values of one (1) for detected and zero (0) for not detected. Sample includes all sampling units visited during field work. The null model includes different occurrence probabilities for each sampling block. Occurrence covariates  for the spatial covariate model are: $bsq$ is tree cover; $dbsq$ is distance to nearest deforestation events;  $frs$  distance to nearest fire events; $dcom$ distance to nearest human communities or settlements; $dcon$ distance to nearest conucos. Covariates for the detection probability are: $walk$ is the distance walked in meters, and $cam$ is the number of camera*days, either as additive ($+$) term or in interactions ($*$). LL: Log Likehood, par: Number of parameters, n: number of observations, AICc: corrected Akaike Information Criterion, $\\Delta$AICc: difference between null and spatial covariates model."
+
+tableA1 %>% 
+  filter(method == "camera + observations", sampling == "Warapata") %>%
+  dplyr::select(species, detection_null, loglik_sum_null, AICc_null, occurrence_best, detection_best, loglik_sum_best, AICc_best, deltaAICc) %>%
+   kbl(digits=2, caption = full.capt,
+       col.names = corr.col.names, escape = FALSE) %>%
+ column_spec(column = 1, italic = TRUE) %>%
+  row_spec(0, color = "white", background = "black" ) %>%
+  row_spec(seq(2,33,by=2), background = "#F0F0F0" ) %>%
+  add_header_above(hdr.above)
+```
+
+
+
+```{r}
+hdr.above <- c("","Null model"=3,"Spatial covariate model"=3,"")
+corr.col.names <- c("Species",  
+                    "Detect. covars.","LL (par, n)", "AICc",
+                    "Covariates (occurrence | detection)", "LL (par, n)", "AICc", "$\\Delta$AICc")
+
+full.capt <- "AIC table for models fitted using \\textbf{photographic records} and \\textbf{off-camera sightings} from \\textbf{Warapata} and \\textbf{Kavanayen} as input. Response variable $y$ is the binary response with values of one (1) for detected and zero (0) for not detected. Sample includes all sampling units visited during field work. The null model includes different occurrence probabilities for each sampling block. Occurrence covariates  for the spatial covariate model are: $bsq$ is tree cover; $dbsq$ is distance to nearest deforestation events;  $frs$  distance to nearest fire events; $dcom$ distance to nearest human communities or settlements; $dcon$ distance to nearest conucos. Covariates for the detection probability are: $region$ (1 for Warapata, 0 for Kavanayen), $walk$ is the distance walked in meters, and $cam$ is the number of camera*days, either as additive ($+$) term or in interactions ($*$). LL: Log Likehood, par: Number of parameters, n: number of observations, AICc: corrected Akaike Information Criterion, $\\Delta$AICc: difference between null and spatial covariates model."
+
+tableA1 %>% 
+  filter(method == "camera + observations", sampling == "Warapata + Kavanayen") %>%
+  dplyr::select(species, detection_null, loglik_sum_null, AICc_null, formula_best, loglik_sum_best, AICc_best, deltaAICc) %>%
+   kbl(digits=2, caption = full.capt,
+       col.names = corr.col.names, escape = FALSE) %>%
+ kable_styling(font_size = 8) %>%
+  column_spec(column = 1, italic = TRUE) %>%
+  row_spec(0, color = "white", background = "black" ) %>%
+  row_spec(seq(2,33,by=2), background = "#F0F0F0" ) %>%
+  add_header_above(hdr.above)
+```
+
