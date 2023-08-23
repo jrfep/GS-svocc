@@ -194,6 +194,8 @@ cuadro_2 <- effort_data %>%
   group_by(Region) %>% 
   summarise(
     `Nr. bloques` = n_distinct(bloque),
+    `Nr. celdas` = n_distinct(grid),
+    `Nr. celdas muestreadas` = sum(if_else(cam>0 | dist_walk>0,1,0)),
     `Nr. celdas con cámaras` = sum(if_else(cam>0,1,0)),
     `Días*cámara`=sum(cam),
     `Nr. celdas visitadas` = sum(if_else(dist_walk>0,1,0)),
