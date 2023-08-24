@@ -211,31 +211,6 @@ cuadro_2[-1,] %>% knitr::kable()
 ### Observaciones por especie {data-width=245}
 ```{r taxalist}
 
-###Create HTML formatting code for header and overall table HTML container
-#create header style HTML code
-# use colors from the flatly theme?
-header.style <- "th { font-family: 'Arial'; font-weight: bold; color: white; background-color: #18bc9c;}"
-cell.style <- "text-align: center; border-right-width: 1px; border-right-style: solid; border-right-color: white; 
-border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: white"
-hcell.style <- "text-align: center; border-width: 1px; border-style: solid; border-color: white; font-size:8px; ba
-ckground-color: #18bc9c;"
-
-#pull header names from the table
-header.names <- c("Assessment Unit", "Period", "min(RS[i])", "mean RS", "max(RS[i])", "mean RS")
-# The container parameter allows us to design the header of the table using CSS
-my.container <- withTags(table(
-  style(type = "text/css", header.style),
-    thead(
-      tr(th("",colspan=2),
-        th("Original formula",colspan=3, style = hcell.style),
-        th("Conditional formula", style = hcell.style)),
-      tr(
-      lapply(header.names, th, style = cell.style)
-      )
-    )
-  )
-)
-
 
 cuadro_1 <- eventos %>% group_by(Especie = species) %>% summarise(`Eventos fotográficos` = sum(!camara %in% "RAS"),`Otros avistamientos`=sum(camara %in% "RAS")) 
 
