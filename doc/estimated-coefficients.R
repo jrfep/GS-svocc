@@ -85,12 +85,23 @@ foreach(v=c("bsq", "dbsq", "frs", "dcom", "dcon"), .combine=bind_rows) %do% {
 #We start with the covariate forest cover, which is include in all models:
   
 plotModCoef("bsq","Forest")
+ggsave(here::here("figs","Forest-parameters-best-model-all-subsets.png"), width = 7, height = 8)
 
 plotModCoef("dbsq","Dist. to deforestation")
 
+ggsave(here::here("figs","Deforestation-parameters-best-model-all-subsets.png"), width = 7, height = 8)
+
 plotModCoef("frs","Dist. to fire")
+
+ggsave(here::here("figs","Fire-parameters-best-model-all-subsets.png"), width = 7, height = 8)
+
 plotModCoef("dcom","Dist. to communities")
+
+ggsave(here::here("figs","Communities-parameters-best-model-all-subsets.png"), width = 7, height = 8)
+
 plotModCoef("dcon","Dist. to conucos")
+
+ggsave(here::here("figs","Conuco-parameters-best-model-all-subsets.png"), width = 7, height = 8)
 
 
 
