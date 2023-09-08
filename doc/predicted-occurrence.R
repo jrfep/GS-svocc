@@ -1,5 +1,5 @@
 require(dplyr)
-#require(raster)
+require(raster)
 #require(chron)
 require(detect)
 require(vegan)
