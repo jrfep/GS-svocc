@@ -1,5 +1,5 @@
 ---
-title: "Supplement to: The challenge of interrupted monitoring in a perturbed ecosystem."
+title: "Supplement to: Leveraging limited data from wildlife monitoring in a conflict affected region in Venezuela"
 subtitle: "Supplement 2 — AIC tables"
 author: 
   - "Izabela Stachowicz"
@@ -11,6 +11,10 @@ classoption: landscape
 editor_options:
   chunk_output_type: console
 ---
+
+\renewcommand{\tablename}{Supplementary table}
+\setcounter{table}{1}
+\renewcommand{\thetable}{A\arabic{table}}
 
 This supplementary documents includes four tables comparing null and spatial covariate models for each of the four combinations of input data (photographic records and off-camera sightings) and sampling regions (Warapata and Kavanayen). 
 
