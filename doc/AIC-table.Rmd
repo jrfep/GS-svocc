@@ -10,11 +10,13 @@ output:
 classoption: landscape
 editor_options:
   chunk_output_type: console
+header-includes:
+  - \renewcommand{\tablename}{Supplementary table}
+  - \setcounter{table}{1}
+  - \renewcommand{\thetable}{A\arabic{table}}
 ---
 
-\renewcommand{\tablename}{Supplementary table}
-\setcounter{table}{1}
-\renewcommand{\thetable}{A\arabic{table}}
+
 
 This supplementary documents includes four tables comparing null and spatial covariate models for each of the four combinations of input data (photographic records and off-camera sightings) and sampling regions (Warapata and Kavanayen). 
 
